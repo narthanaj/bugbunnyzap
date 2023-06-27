@@ -1,12 +1,14 @@
 pipeline {
-  agent any
+      agent {
+            label 'ServiceNode_1'
+            }
   tools { 
-        maven 'Maven_3_5_2'  
+        maven 'mavan_3_5_2'  
     }
    stages{
     stage('CompileandRunSonarAnalysis') {
             steps {	
-		sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=asgbuggywebapp -Dsonar.organization=asgbuggywebapp -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=932558e169d66a8f1d1adf470b908a46156f5844'
+		sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=bugbunny_bugbunnyname -Dsonar.organization=bugbunny -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=28be4743bcd59168fc9adeb8a386bea7e3d9e9cd'
 			}
     }
 
@@ -16,11 +18,11 @@ pipeline {
 					sh 'mvn snyk:test -fn'
 				}
 			}
-    }
+    }	
 
-	stage('Build') { 
+	stage('Build Docker Image') { 
             steps { 
-               withDockerRegistry([credentialsId: "dockerlogin", url: ""]) {
+               withDockerRegistry([credentialsId: "DockerLogin", url: "https://index.docker.io/v1/"]) {
                  script{
                  app =  docker.build("asg")
                  }
@@ -28,10 +30,10 @@ pipeline {
             }
     }
 
-	stage('Push') {
+	stage('Push Docker image to ECR') {
             steps {
                 script{
-                    docker.withRegistry('https://145988340565.dkr.ecr.us-west-2.amazonaws.com', 'ecr:us-west-2:aws-credentials') {
+                    docker.withRegistry('https://315308560490.dkr.ecr.ap-southeast-2.amazonaws.com', 'ecr:ap-southeast-2:0001') {
                     app.push("latest")
                     }
                 }
