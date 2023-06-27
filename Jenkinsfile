@@ -1,3 +1,5 @@
+def kubeconfigPath = '/home/ec2-user/.kube/config'
+
 pipeline {
       agent {
             label 'ServiceNode_1'
@@ -39,15 +41,22 @@ pipeline {
                 }
             }
     	}
-	   
-	stage('Kubernetes Deployment of ASG Bugg Web Application') {
-	   steps {
-	      withKubeConfig([credentialsId: 'kubelogin']) {
-		  sh('kubectl delete all --all -n devsecops')
-		  sh ('kubectl apply -f deployment.yaml --namespace=devsecops')
-		}
-	      }
-   	}
+
+	stage('Create Kubernetes cluster') {
+	    steps {
+	        sh('eksctl create cluster --name TestCube-cluster --version 1.23 --region ap-southeast-2 --nodegroup-name linux-nodes --node-type t2.micro --nodes 2')
+	    }
+	}
+
+	stage('Kubernetes Deployment') {
+	    steps {
+	        withEnv(["KUBECONFIG=${kubeconfigPath}"]) {
+	            sh('kubectl delete all --all -n devsecops')
+	            sh('kubectl apply -f deployment.yaml --namespace=devsecops')
+	        }
+	    }
+	}
+
 	   
 	stage ('wait_for_testing'){
 	   steps {
@@ -55,13 +64,21 @@ pipeline {
 	   	}
 	   }
 	   
+
 	stage('RunDASTUsingZAP') {
-          steps {
-		    withKubeConfig([credentialsId: 'kubelogin']) {
-				sh('zap.sh -cmd -quickurl http://$(kubectl get services/asgbuggy --namespace=devsecops -o json| jq -r ".status.loadBalancer.ingress[] | .hostname") -quickprogress -quickout ${WORKSPACE}/zap_report.html')
-				archiveArtifacts artifacts: 'zap_report.html'
-		    }
-	     }
-       } 
+	    steps {
+	        withEnv(["KUBECONFIG=${kubeconfigPath}"]) {
+	            sh('zap.sh -cmd -quickurl http://$(kubectl get services/asgbuggy --namespace=devsecops -o json| jq -r ".status.loadBalancer.ingress[] | .hostname") -quickprogress -quickout ${WORKSPACE}/zap_report.html')
+	            archiveArtifacts artifacts: 'zap_report.html'
+	        }
+	    }
+	}
+
+
+	stage('delete Kubernetes cluster') {
+	    steps {
+	        sh('eksctl delete cluster --region=ap-southeast-2 --name=TestCube-cluster')
+	    }
+	} 
   }
 }
