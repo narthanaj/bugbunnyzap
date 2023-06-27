@@ -45,6 +45,7 @@ pipeline {
 	stage('Create Kubernetes cluster') {
 	    steps {
 	        sh('eksctl create cluster --name TestCube-cluster --version 1.23 --region ap-southeast-2 --nodegroup-name linux-nodes --node-type t2.micro --nodes 2')
+			sh('kubectl create namespace devsecops')
 	    }
 	}
 
