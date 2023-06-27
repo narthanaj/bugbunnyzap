@@ -8,13 +8,13 @@ pipeline {
         maven 'mavan_3_5_2'  
     }
    stages{
-    stage('CompileandRunSonarAnalysis') {
+    stage('Compile and Run Sonar Analysis') {
             steps {	
 		sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=bugbunny_bugbunnyname -Dsonar.organization=bugbunny -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=28be4743bcd59168fc9adeb8a386bea7e3d9e9cd'
 			}
     }
 
-	stage('RunSCAAnalysisUsingSnyk') {
+	stage('Run SCA Analysis Using Snyk') {
             steps {		
 				withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
 					sh 'mvn snyk:test -fn'
