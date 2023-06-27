@@ -1,4 +1,4 @@
-def kubeconfigPath = '/home/ec2-user/.kube/config'
+def kubeconfigPath = '/root/.kube/config'
 
 pipeline {
       agent {
